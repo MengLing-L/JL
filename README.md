@@ -1,1 +1,1 @@
-g++ optimal_decrypt.cpp -o optimal_decrypt -lgmp
+g++ -O0 jl_encryption.cpp -o jl_encryption -lgmp -g
