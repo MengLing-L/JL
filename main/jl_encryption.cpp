@@ -6,42 +6,40 @@
 #include <math.h>
 #include <iostream>
 using namespace std;
-const unsigned long int Y_P_LEN = 1025;
-const unsigned long int MAX_IT_LEN = 170;
 map<unsigned long int, mpz_t> y_p_map;
 map<unsigned long int, map<unsigned long int,mpz_t>> IT;
 
-void ypmap_new(map<unsigned long int, mpz_t> &map, unsigned long int k)
+void ypmap_new(map<unsigned long int, mpz_t> &map, unsigned long int l)
 {
-    for(unsigned long int i = 1; i < k + 1; i++){
+    for(unsigned long int i = 1; i < (unsigned long int)pow(2,l) + 1; i++){
         mpz_init (map[i]);
     }
 }
 
-void itmap_new(map<unsigned long int, map<unsigned long int, mpz_t>> &map)
+void itmap_new(map<unsigned long int, map<unsigned long int, mpz_t>> &map, unsigned long int s, unsigned long int l)
 {
-    for(unsigned long int i = 1; i < MAX_IT_LEN; i++){
-        for(unsigned long int j = 1; j < Y_P_LEN; j++){
+    for(unsigned long int i = 1; i < s + 1; i++){
+        for(unsigned long int j = 1; j < (unsigned long int)pow(2,l) + 1; j++){
 		mpz_init (map[i][j]);
 	}
     }
 }
 
-void ypmap_clear(std::map<unsigned long int, mpz_t> &map, unsigned long int k)
+/*void ypmap_clear(std::map<unsigned long int, mpz_t> &map, unsigned long int l)
 {
-    for(unsigned long int i = 1; i < k + 1; i++){
+    for(unsigned long int i = 1; i < (unsigned long int)pow(2,l) + 1; i++){
         mpz_clear (map[i]);
     }
 }
 
-void itmap_clear(map<unsigned long int, map<unsigned long int, mpz_t>> &map)
+void itmap_clear(map<unsigned long int, map<unsigned long int, mpz_t>> &map, unsigned long int s, unsigned long int l)
 {
-    for(unsigned long int i = 1; i < MAX_IT_LEN; i++){
-        for(unsigned long int j = 1; j < Y_P_LEN; j++){
+    for(unsigned long int i = 1; i < s + 1; i++){
+        for(unsigned long int j = 1; j < (unsigned long int)pow(2,l) + 1; j++){
 		mpz_clear (map[i][j]);
 	}
     }
-}
+}*/
 
 struct JL_PK
 {
@@ -79,15 +77,15 @@ void JL_PK_free(JL_PK* jl_pk)
     mpz_clear(jl_pk->y);
     mpz_clear(jl_pk->h);
 }
-
+//JL_SK * JL_SK_new(unsigned long int s, unsigned long int l)
 JL_SK * JL_SK_new()
 { 
     JL_SK *jl_sk;
     jl_sk = (JL_SK *)malloc(sizeof(*jl_sk));
     mpz_init(jl_sk->p);
     mpz_init(jl_sk->alpha);
-    ypmap_new(y_p_map, Y_P_LEN);
-    itmap_new(IT);
+    //ypmap_new(y_p_map, l);
+    //itmap_new(IT, s, l);
     return jl_sk;
 }
 
@@ -95,8 +93,8 @@ void JL_SK_free(JL_SK* jl_sk)
 { 
     mpz_clear(jl_sk->p);
     mpz_clear(jl_sk->alpha);
-    ypmap_clear(y_p_map, Y_P_LEN);
-    itmap_clear(IT);
+    //ypmap_clear(y_p_map, l);
+    //itmap_clear(IT, s, l);
 }
 
 
@@ -300,9 +298,8 @@ void choose_non_quadratic_residual(mpz_ptr x, mpz_srcptr p, mpz_srcptr q, mpz_sr
 }
 
 
-void JL_KeyGen(unsigned long int k,JL_PK *pk,  JL_SK *sk, unsigned long int p_bits, unsigned long int q_bits, unsigned long int tmp_seed){
-    pk->k = k;
-    unsigned long int l = 10, s = (unsigned long int)(pk->k/l);
+void JL_KeyGen(unsigned long int s, unsigned long int l, JL_PK *pk,  JL_SK *sk, unsigned long int p_bits, unsigned long int q_bits, unsigned long int tmp_seed){
+    pk->k = s*l;
     mpz_t seed,tmp_r,two_pow_k,q,two_pow_l,y_p_2l,two_pow_i;
     
     mpz_init(y_p_2l);
@@ -390,8 +387,7 @@ void JL_Encrypt(mpz_srcptr m, mpz_srcptr r, JL_Ciphertext *jl_ciphertext, JL_PK 
     mpz_clear(c2);
 }
 
-void JL_decrypt(mpz_ptr recover_m, JL_Ciphertext *jl_ciphertext, JL_PK *pk, JL_SK *sk){
-    unsigned long int l = 10, s = (unsigned long int)(pk->k/l);
+void JL_decrypt(unsigned long int s, unsigned long int l, mpz_ptr recover_m, JL_Ciphertext *jl_ciphertext, JL_PK *pk, JL_SK *sk){
     mpz_t two_pow_k,TWO,t,tmp_m,r;
 	mpz_init (two_pow_k);
 	mpz_init (TWO);
@@ -453,19 +449,20 @@ int main()
     gmp_randinit_mt(prng);
     
     
+    
+    
+
+    unsigned long int k = 712, l = 8, s = k/l;
+    unsigned long int p_bits=1680, q_bits=1680;
+    //unsigned long int k = 1160;
+    //unsigned long int p_bits=3840, q_bits=3840;
     JL_PK *jl_pk = JL_PK_new();
     JL_SK *jl_sk = JL_SK_new();
     JL_Ciphertext *jl_ciphertext = JL_Ciphertext_new();
-    
-
-    unsigned long int k = 910;
-    unsigned long int p_bits=2080, q_bits=2080;
-    //unsigned long int k = 1160;
-    //unsigned long int p_bits=3840, q_bits=3840;
-    cout << "k bits: " << k << ", p bits: " << p_bits << endl; 
+    cout << "k bits: " << k << ", p bits: " << p_bits << ", s: " << s << ", l: " << l << endl;
 
     auto start_time = chrono::steady_clock::now();
-    JL_KeyGen(k, jl_pk, jl_sk, p_bits, q_bits, 23423);
+    JL_KeyGen(s, l, jl_pk, jl_sk, p_bits, q_bits, 23423);
     auto end_time = chrono::steady_clock::now(); // end to count the time
     auto running_time = end_time - start_time;
     cout << "Key generation takes time = "
@@ -487,7 +484,7 @@ int main()
     mpz_set_ui (recover_m, 0);
 
     start_time = chrono::steady_clock::now();
-    JL_decrypt(recover_m, jl_ciphertext, jl_pk, jl_sk);
+    JL_decrypt(s, l, recover_m, jl_ciphertext, jl_pk, jl_sk);
     gmp_printf ("recover_m: %Zd\n", recover_m);
     end_time = chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
@@ -495,17 +492,20 @@ int main()
     << chrono::duration <double, milli> (running_time).count() << " ms" << endl;
 
 
-    k = 1160;
+    k = 1160, l = 10, s = k/l;;
     p_bits=3840, q_bits=3840;
-    cout << "k bits: " << k << ", p bits: " << p_bits << endl;
+    //jl_pk = JL_PK_new();
+    //jl_sk = JL_SK_new(s, l);
+    //jl_ciphertext = JL_Ciphertext_new();
+    cout << "k bits: " << k << ", p bits: " << p_bits << ", s: " << s << ", l: " << l << endl;
     start_time = chrono::steady_clock::now();
-    JL_KeyGen(k, jl_pk, jl_sk, p_bits, q_bits, 23423);
+    JL_KeyGen(s, l, jl_pk, jl_sk, p_bits, q_bits, 232323);
     end_time = chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     cout << "Key generation takes time = "
     << chrono::duration <double, milli> (running_time).count() << " ms" << endl;
     mpz_init(seed);
-    mpz_set_ui(seed, 234234);
+    mpz_set_ui(seed, 2342098);
     gmp_randseed(prng, seed);
     mpz_urandomb(r, prng, k-20);
     mpz_urandomb(m, prng, k);
@@ -521,7 +521,7 @@ int main()
     mpz_set_ui (recover_m, 0);
 
     start_time = chrono::steady_clock::now();
-    JL_decrypt(recover_m, jl_ciphertext, jl_pk, jl_sk);
+    JL_decrypt(s, l, recover_m, jl_ciphertext, jl_pk, jl_sk);
     gmp_printf ("recover_m: %Zd\n", recover_m);
     end_time = chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
