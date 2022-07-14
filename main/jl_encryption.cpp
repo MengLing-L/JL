@@ -9,6 +9,7 @@ using namespace std;
 map<unsigned long int, mpz_t> y_p_map;
 map<unsigned long int, map<unsigned long int,mpz_t>> IT;
 
+/*
 void ypmap_new(map<unsigned long int, mpz_t> &map, unsigned long int l)
 {
     for(unsigned long int i = 1; i < (unsigned long int)pow(2,l) + 1; i++){
@@ -25,7 +26,7 @@ void itmap_new(map<unsigned long int, map<unsigned long int, mpz_t>> &map, unsig
     }
 }
 
-/*void ypmap_clear(std::map<unsigned long int, mpz_t> &map, unsigned long int l)
+void ypmap_clear(std::map<unsigned long int, mpz_t> &map, unsigned long int l)
 {
     for(unsigned long int i = 1; i < (unsigned long int)pow(2,l) + 1; i++){
         mpz_clear (map[i]);
@@ -398,7 +399,6 @@ void JL_decrypt(unsigned long int s, unsigned long int l, mpz_ptr recover_m, JL_
 	mpz_set_ui (TWO, 2);
 	mpz_pow_ui (two_pow_k, TWO, s*l);
     map<unsigned long int, mpz_t> Z_map;
-    ypmap_new(Z_map, s);
 
 	compute_nth_power_residue_symbol(Z_map[s], jl_ciphertext->c, sk->p, two_pow_k);
 
@@ -447,10 +447,6 @@ int main()
     mpz_t seed;
     gmp_randstate_t prng;
     gmp_randinit_mt(prng);
-    
-    
-    
-    
 
     unsigned long int k = 712, l = 8, s = k/l;
     unsigned long int p_bits=1680, q_bits=1680;
