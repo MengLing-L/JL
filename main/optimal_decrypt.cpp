@@ -32,7 +32,7 @@ char* get_sub_str(char *str, int start, unsigned long int len)
     return res;
 }
 
-void decrpt(std::map<string, unsigned long int> &ptr_indext,unsigned long int s, unsigned long int l, mpz_srcptr two_pow_l, mpz_ptr recover_m, mpz_srcptr y, mpz_srcptr c, unsigned long int k, mpz_srcptr p, std::map<unsigned long int, mpz_t> &y_p_map, std::map<unsigned long int, mpz_t> &Z_map, std::map<unsigned long int, std::map<unsigned long int, mpz_t>> &IT){
+void decrpt(unsigned long int s, unsigned long int l, mpz_srcptr two_pow_l, mpz_ptr recover_m, mpz_srcptr y, mpz_srcptr c, unsigned long int k, mpz_srcptr p, std::map<unsigned long int, mpz_t> &y_p_map, std::map<unsigned long int, mpz_t> &Z_map, std::map<unsigned long int, std::map<unsigned long int, mpz_t>> &IT){
 	mpz_t two_pow_k,TWO,t,tmp_m,r;
 	mpz_init (two_pow_k);
 	mpz_init (TWO);
@@ -51,6 +51,7 @@ void decrpt(std::map<string, unsigned long int> &ptr_indext,unsigned long int s,
 		mpz_powm_ui (Z_map[z_index], Z_map[z_index + 1], (unsigned long int) pow(2, l), p);// z[i+1]^2 mod p
 	}
     //auto end_time = chrono::steady_clock::now(); // end to count the time
+
 
     //auto running_time = end_time - start_time;
     //cout << "Z computition takes time = "
@@ -143,7 +144,6 @@ int main()
     mpz_init (ONE);
 
     std::map<unsigned long int, mpz_t> y_p_map;
-    std::map<string, unsigned long int> ptr_indext;
     std::map<unsigned long int, mpz_t> Z_map;
     std::map<unsigned long int, std::map<unsigned long int,mpz_t>> IT;
     map_new(y_p_map, (unsigned long int) pow(2, l) - 1);
@@ -184,7 +184,7 @@ int main()
 
     auto start_time = chrono::steady_clock::now();
     
-    decrpt(ptr_indext, s, l, two_pow_l, recover_m, y, c, k, p, y_p_map, Z_map, IT);
+    decrpt(s, l, two_pow_l, recover_m, y, c, k, p, y_p_map, Z_map, IT);
 
     auto end_time = chrono::steady_clock::now(); // end to count the time
 
@@ -237,7 +237,7 @@ int main()
 
     start_time = chrono::steady_clock::now();
     //generate_prime_optimized(p, p_bits, p_min_bits, k, 3623);
-    decrpt(ptr_indext, s, l, two_pow_l, recover_m, y, c, k, p, y_p_map1, Z_map1, IT1);
+    decrpt(s, l, two_pow_l, recover_m, y, c, k, p, y_p_map1, Z_map1, IT1);
 
     end_time = chrono::steady_clock::now(); // end to count the time
 
@@ -295,7 +295,7 @@ int main()
 
     start_time = chrono::steady_clock::now();
     //generate_prime_optimized(p, p_bits, p_min_bits, k, 3623);
-    decrpt(ptr_indext, s, l, two_pow_l, recover_m, y, c, k, p, y_p_map2, Z_map2, IT2);
+    decrpt(s, l, two_pow_l, recover_m, y, c, k, p, y_p_map2, Z_map2, IT2);
 
     end_time = chrono::steady_clock::now(); // end to count the time
 

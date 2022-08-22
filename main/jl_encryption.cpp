@@ -2,12 +2,13 @@
 #define BHJL_HE_MR_INTERATIONS 16
 
 #include "gen_prime.cpp"
-#include <map>
+//#include <map>
 #include <math.h>
 #include <iostream>
 using namespace std;
-map<unsigned long int, mpz_t> y_p_map;
-map<unsigned long int, map<unsigned long int,mpz_t>> IT;
+//map<unsigned long int, mpz_t> y_p_map;
+//map<unsigned long int, map<unsigned long int,mpz_t>> IT;
+
 
 /*
 void ypmap_new(map<unsigned long int, mpz_t> &map, unsigned long int l)
@@ -55,6 +56,8 @@ struct JL_SK
 {
     mpz_t p;
     mpz_t alpha;
+    mpz_t y_p_map[1025];
+    mpz_t IT[170][1025];
 };
 
 struct JL_Ciphertext{
@@ -348,17 +351,17 @@ void JL_KeyGen(unsigned long int s, unsigned long int l, JL_PK *pk,  JL_SK *sk, 
     mpz_ui_pow_ui (two_pow_l, 2, l);
     compute_nth_power_residue_symbol(y_p_2l, pk->y, sk->p, two_pow_l);
 
-    mpz_set_ui (y_p_map[0], 1);
+    mpz_set_ui (sk->y_p_map[0], 1);
     for(unsigned long int i = 1; i < (unsigned long int)pow(2,l); i++){
-    	mpz_powm_ui (y_p_map[i], y_p_2l, i, sk->p);
+    	mpz_powm_ui (sk->y_p_map[i], y_p_2l, i, sk->p);
     }
 
     for(unsigned long int i = 1; i < s + 1; i++){
 	    mpz_ui_pow_ui (two_pow_i, 2, i*l);
 	    compute_nth_power_residue_symbol(y_p_2l, pk->y, sk->p, two_pow_i);
         for(unsigned long int j = 1; j < (unsigned long int)pow(2,l); j++){
-            mpz_powm_ui (IT[i][j], y_p_2l, j, sk->p);
-            mpz_invert (IT[i][j], IT[i][j], sk->p);
+            mpz_powm_ui (sk->IT[i][j], y_p_2l, j, sk->p);
+            mpz_invert (sk->IT[i][j], sk->IT[i][j], sk->p);
 	    }
     }
 
@@ -398,7 +401,11 @@ void JL_decrypt(unsigned long int s, unsigned long int l, mpz_ptr recover_m, JL_
 	
 	mpz_set_ui (TWO, 2);
 	mpz_pow_ui (two_pow_k, TWO, s*l);
-    map<unsigned long int, mpz_t> Z_map;
+    mpz_t Z_map[s+1];
+
+    for(unsigned long int w = 1; w < s + 1; w++){
+        mpz_init(Z_map[w]);
+    }
 
 	compute_nth_power_residue_symbol(Z_map[s], jl_ciphertext->c, sk->p, two_pow_k);
 
@@ -416,21 +423,30 @@ void JL_decrypt(unsigned long int s, unsigned long int l, mpz_ptr recover_m, JL_
 		while(mpz_cmp_ui (tmp_m, 0) > 0 && shift < i){
 			itindex = mpz_fdiv_r_ui (r, tmp_m, (unsigned long int) pow(2, l));
 			if (itindex != 0){
-				mpz_mul (t, t, IT[i - shift + 1][itindex]);
+				mpz_mul (t, t, sk->IT[i - shift + 1][itindex]);
 				mpz_mod (t, t, sk->p);
 			}
 			shift = shift + 1;
 			mpz_fdiv_q_2exp(tmp_m, tmp_m, l);
 		}
-		for (std::map<unsigned long int, mpz_t>::iterator it=y_p_map.begin(); it!=y_p_map.end(); ++it){
+        for (unsigned long int u = 1; u < (unsigned long int) pow(2, l) + 1; u++){
+            if (mpz_cmp(t, sk->y_p_map[u]) == 0){
+				mpz_set_ui (tmp_m, u);
+				mpz_mul_2exp (tmp_m, tmp_m, (i - 1)*l);
+				mpz_add (recover_m, recover_m, tmp_m);
+			}
+        }
+		/*for (std::map<unsigned long int, mpz_t>::iterator it=y_p_map.begin(); it!=y_p_map.end(); ++it){
 			if (mpz_cmp(t, it->second) == 0){
 				mpz_set_ui (tmp_m, it->first);
 				mpz_mul_2exp (tmp_m, tmp_m, (i - 1)*l);
 				mpz_add (recover_m, recover_m, tmp_m);
 			}
-		}
+		}*/
 	}
-	
+	for(unsigned long int w = 1; w < s + 1; w++){
+        mpz_clear(Z_map[w]);
+    }
 	mpz_clear (two_pow_k);
 	mpz_clear (TWO);
 	mpz_clear (t);
@@ -470,7 +486,7 @@ int main()
     mpz_urandomb(m, prng, k-2);
     //mpz_set_ui(m, 234234);
 
-    gmp_printf ("m: %Zd\n", m);
+    
     start_time = chrono::steady_clock::now();
     JL_Encrypt(m, r, jl_ciphertext, jl_pk);
     end_time = chrono::steady_clock::now(); // end to count the time
@@ -481,11 +497,12 @@ int main()
 
     start_time = chrono::steady_clock::now();
     JL_decrypt(s, l, recover_m, jl_ciphertext, jl_pk, jl_sk);
-    gmp_printf ("recover_m: %Zd\n", recover_m);
     end_time = chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     cout << "Decryption takes time = "
     << chrono::duration <double, milli> (running_time).count() << " ms" << endl;
+    gmp_printf ("m: %Zd\n", m);
+    gmp_printf ("recover_m: %Zd\n", recover_m);
 
 
     k = 1160, l = 10, s = k/l;;
@@ -507,7 +524,7 @@ int main()
     mpz_urandomb(m, prng, k);
     //mpz_set_ui(m, 234234);
 
-    gmp_printf ("m: %Zd\n", m);
+    
     start_time = chrono::steady_clock::now();
     JL_Encrypt(m, r, jl_ciphertext, jl_pk);
     end_time = chrono::steady_clock::now(); // end to count the time
@@ -518,11 +535,49 @@ int main()
 
     start_time = chrono::steady_clock::now();
     JL_decrypt(s, l, recover_m, jl_ciphertext, jl_pk, jl_sk);
-    gmp_printf ("recover_m: %Zd\n", recover_m);
     end_time = chrono::steady_clock::now(); // end to count the time
     running_time = end_time - start_time;
     cout << "Decryption takes time = "
     << chrono::duration <double, milli> (running_time).count() << " ms" << endl;
+    gmp_printf ("m: %Zd\n", m);
+    gmp_printf ("recover_m: %Zd\n", recover_m);
+
+    k = 1680, l = 10, s = k/l;;
+    p_bits=7680, q_bits=7680;
+    //jl_pk = JL_PK_new();
+    //jl_sk = JL_SK_new(s, l);
+    //jl_ciphertext = JL_Ciphertext_new();
+    cout << "k bits: " << k << ", p bits: " << p_bits << ", s: " << s << ", l: " << l << endl;
+    start_time = chrono::steady_clock::now();
+    JL_KeyGen(s, l, jl_pk, jl_sk, p_bits, q_bits, 232323);
+    end_time = chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    cout << "Key generation takes time = "
+    << chrono::duration <double, milli> (running_time).count() << " ms" << endl;
+    mpz_init(seed);
+    mpz_set_ui(seed, 2342098);
+    gmp_randseed(prng, seed);
+    mpz_urandomb(r, prng, k-20);
+    mpz_urandomb(m, prng, k);
+    //mpz_set_ui(m, 234234);
+
+    
+    start_time = chrono::steady_clock::now();
+    JL_Encrypt(m, r, jl_ciphertext, jl_pk);
+    end_time = chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    cout << "Encryption takes time = "
+    << chrono::duration <double, milli> (running_time).count() << " ms" << endl;
+    mpz_set_ui (recover_m, 0);
+
+    start_time = chrono::steady_clock::now();
+    JL_decrypt(s, l, recover_m, jl_ciphertext, jl_pk, jl_sk);
+    end_time = chrono::steady_clock::now(); // end to count the time
+    running_time = end_time - start_time;
+    cout << "Decryption takes time = "
+    << chrono::duration <double, milli> (running_time).count() << " ms" << endl;
+    gmp_printf ("m: %Zd\n", m);
+    gmp_printf ("recover_m: %Zd\n", recover_m);
 
 
     mpz_clear (seed);
